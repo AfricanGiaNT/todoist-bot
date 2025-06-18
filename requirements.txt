@@ -2,4 +2,6 @@ python-telegram-bot
 todoist-api-python
 python-dotenv
 openai
-Flask 
+Flask
+gunicorn
+uvicorn

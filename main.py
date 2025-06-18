@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+PORT = int(os.environ.get('PORT', 8000))
+HOST_URL = os.environ.get('HOST_URL')
 
 # Set up the Telegram bot application
 application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
@@ -31,22 +33,37 @@ application.add_handler(CommandHandler("complete", complete_task_handler))
 # Set up the Flask app
 app = Flask(__name__)
 
-@app.route('/webhook', methods=['POST'])
-def webhook() -> Response:
-    """Handle incoming Telegram updates."""
-    logger.info("Webhook received.")
-    # Run the async function in a new event loop
-    asyncio.run(process_update(request.get_json(force=True)))
-    return Response(status=HTTPStatus.OK)
-
-async def process_update(data: dict):
-    """Process the incoming update from Telegram."""
+@app.before_request
+async def initialize_bot():
+    """Initialize the bot before handling a request."""
     await application.initialize()
-    update = Update.de_json(data, application.bot)
-    await application.process_update(update)
-    await application.shutdown()
+    if not HOST_URL:
+        raise ValueError("HOST_URL environment variable not set.")
+    webhook_info = await application.bot.get_webhook_info()
+    webhook_url = f"{HOST_URL}/webhook"
+    if webhook_info.url != webhook_url:
+        await application.bot.set_webhook(url=webhook_url)
+        logger.info(f"Webhook set to {webhook_url}")
+
+@app.route('/webhook', methods=['POST'])
+async def webhook() -> Response:
+    """Handle incoming Telegram updates."""
+    try:
+        update_data = request.get_json(force=True)
+        update = Update.de_json(update_data, application.bot)
+        await application.process_update(update)
+        return Response(status=HTTPStatus.OK)
+    except Exception as e:
+        logger.error(f"Error processing update: {e}", exc_info=True)
+        return Response(status=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+@app.route('/')
+def index():
+    """A simple endpoint to confirm the server is running."""
+    return "Bot is running!"
 
 if __name__ == '__main__':
-    logger.info("Starting bot...")
-    extra_files = ['config/projects.json']
-    app.run(debug=True, host='0.0.0.0', port=5002, extra_files=extra_files) 
+    # This block is for local development and won't be used by a production server like Gunicorn.
+    # For production, Gunicorn or another WSGI/ASGI server will import the `app` object.
+    logger.info(f"Starting bot locally on port {PORT}...")
+    app.run(debug=True, host='0.0.0.0', port=PORT) 

@@ -231,6 +231,65 @@ This plan covers loading and using a predefined project/section structure from a
 
 ⸻
 
+### 🚢 Milestone 7 Plan: Deployment
+
+This plan outlines the steps to deploy the Telegram bot to a cloud hosting provider, ensuring it runs continuously and responds to user messages in real-time. We will focus on a webhook-based approach for efficiency and prepare the application for a production environment.
+
+1.  **Prepare for Webhook-Based Deployment:**
+    *   **Dependency:** Add a lightweight web server library to `requirements.txt`, such as `Flask` or `Uvicorn`, to handle incoming webhook requests from Telegram. `python-telegram-bot` integrates well with them.
+    *   **Code (`main.py`):**
+        *   Modify `main.py` to stop using polling (`application.run_polling()`) and instead run a web server that listens for updates.
+        *   The application will need to be configured to listen on a specific port (e.g., provided by the hosting environment via the `PORT` environment variable).
+        *   Set up a webhook handler endpoint (e.g., `/webhook`) that receives updates from Telegram and passes them to the bot's dispatcher.
+
+2.  **Containerize the Application with Docker (Recommended):**
+    *   **Action:** Create a `Dockerfile` in the project root.
+    *   **Dockerfile Steps:**
+        *   Use an official Python base image (e.g., `python:3.11-slim`).
+        *   Set the working directory.
+        *   Copy `requirements.txt` and install dependencies.
+        *   Copy the rest of the application code.
+        *   Expose the port the web server will run on.
+        *   Define the `CMD` to start the web server (`main.py`).
+    *   **Benefit:** Docker ensures a consistent and portable environment, simplifying deployment across different platforms.
+
+3.  **Choose and Configure a Hosting Platform:**
+    *   **Option A (PaaS - e.g., Render):**
+        *   Connect your Git repository to Render.
+        *   Create a new "Web Service" and point it to your repository.
+        *   Set the "Start Command" (e.g., `gunicorn main:app` or `python main.py`).
+        *   In the "Environment" tab, add your secrets: `TODOIST_API_TOKEN` and `TELEGRAM_BOT_TOKEN`.
+    *   **Option B (Container Service - e.g., Railway, Fly.io):**
+        *   Push your Docker image to a registry (like Docker Hub or GitHub Container Registry) or connect your repository and have the platform build from the `Dockerfile`.
+        *   Configure the service to use the built image.
+        *   Set the environment variables for your secrets.
+
+4.  **Set the Telegram Webhook:**
+    *   Once deployed, your application will have a public URL (e.g., `https://my-todoist-bot.onrender.com`).
+    *   You must inform Telegram to send updates to this URL.
+    *   **Action:** Create a simple, separate Python script (`set_webhook.py`) that uses your `TELEGRAM_BOT_TOKEN` to call Telegram's `setWebhook` API method, pointing it to your public URL.
+    *   **Run this script once** after the application is deployed and running.
+
+5.  **Deploy and Verify:**
+    *   **Action:** Push your code (including the `Dockerfile`) to your main branch.
+    *   **Monitor:** Watch the deployment logs on your chosen platform for any errors during the build or startup process.
+    *   **Test:** Once live, send commands like `/start` and `/add` to your bot on Telegram to ensure it is working correctly.
+
+#### **Alternative Approach**
+
+*   **Serverless Deployment (e.g., AWS Lambda, Google Cloud Functions):** For a lower-cost, auto-scaling option, the bot could be deployed as a serverless function. Each Telegram update would trigger the function via an API Gateway. This eliminates the need to manage a running server but requires restructuring the application to fit a serverless handler model, which can be more complex to set up initially.
+
+#### **Critique of Plan**
+
+*   **Completeness:** This plan provides a comprehensive path from a local, polling-based application to a production-ready, webhook-based deployment. It covers containerization, hosting options, and the critical step of setting the webhook.
+*   **Clarity:** The plan breaks down deployment into clear, actionable steps. Presenting Docker as the recommended but skippable approach (if using a PaaS that builds from source) provides flexibility.
+*   **Potential Issues:**
+    *   **Webhook URL:** The plan correctly notes that the public URL is provided by the host, but it's a common point of confusion. Emphasizing this is key.
+    *   **Secret Management:** It clearly separates local `.env` usage from production environment variable configuration, which is a best practice.
+    *   **Initial Setup:** Running the `set_webhook.py` script is a manual step. For a more advanced setup, this could be integrated into the application's startup logic, but a separate script is simpler and safer for a one-time setup.
+
+⸻
+
 🧪 Self-Critique
 	•	✅ Completeness: Covers all major functionality including parsing, task management, and integration.
 	•	⚠️ Gaps: Error handling flows and how user clarifications are captured in AI response still need detailed design.
