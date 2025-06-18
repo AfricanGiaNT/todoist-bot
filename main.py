@@ -2,6 +2,8 @@ import os
 import asyncio
 import logging
 from http import HTTPStatus
+
+from asgiref.wsgi import WsgiToAsgi
 from flask import Flask, request, Response
 from dotenv import load_dotenv
 from telegram import Update
@@ -30,10 +32,11 @@ application.add_handler(CommandHandler("help", help_command))
 application.add_handler(CommandHandler("add", add_task_handler))
 application.add_handler(CommandHandler("complete", complete_task_handler))
 
-# Set up the Flask app
-app = Flask(__name__)
+# Set up the Flask app and wrap it for ASGI compatibility
+flask_app = Flask(__name__)
+app = WsgiToAsgi(flask_app)
 
-@app.before_request
+@flask_app.before_request
 async def initialize_bot():
     """Initialize the bot before handling a request."""
     await application.initialize()
@@ -45,7 +48,7 @@ async def initialize_bot():
         await application.bot.set_webhook(url=webhook_url)
         logger.info(f"Webhook set to {webhook_url}")
 
-@app.route('/webhook', methods=['POST'])
+@flask_app.route('/webhook', methods=['POST'])
 async def webhook() -> Response:
     """Handle incoming Telegram updates."""
     try:
@@ -57,7 +60,7 @@ async def webhook() -> Response:
         logger.error(f"Error processing update: {e}", exc_info=True)
         return Response(status=HTTPStatus.INTERNAL_SERVER_ERROR)
 
-@app.route('/')
+@flask_app.route('/')
 def index():
     """A simple endpoint to confirm the server is running."""
     return "Bot is running!"
@@ -66,4 +69,4 @@ if __name__ == '__main__':
     # This block is for local development and won't be used by a production server like Gunicorn.
     # For production, Gunicorn or another WSGI/ASGI server will import the `app` object.
     logger.info(f"Starting bot locally on port {PORT}...")
-    app.run(debug=True, host='0.0.0.0', port=PORT) 
+    flask_app.run(debug=True, host='0.0.0.0', port=PORT) 

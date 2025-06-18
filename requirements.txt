@@ -2,6 +2,7 @@ python-telegram-bot
 todoist-api-python
 python-dotenv
 openai
-Flask
+Flask[async]
 gunicorn
 uvicorn
+asgiref
