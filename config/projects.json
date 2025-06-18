@@ -1,0 +1,28 @@
+{
+  "AI Automations": {
+    "keywords": ["ai", "automation", "automations"],
+    "sections": {
+      "Farming-guide": ["farming guide", "guide"],
+      "Ai to video pipeline": ["video", "pipeline"]
+    }
+  },
+  "Home": {
+    "keywords": ["home", "house"],
+    "sections": {
+      "General": ["task"]
+    }
+  },
+  "Farming": {
+    "keywords": ["farming", "farm", "harvest"],
+    "sections": {
+        "General": ["task"]
+    }
+  },
+  "Personal": {
+    "keywords": ["personal", "family"],
+    "sections": {
+      "Groceries": ["buy", "groceries", "food"],
+      "Errands": ["errands", "chores"]
+    }
+  }
+} 

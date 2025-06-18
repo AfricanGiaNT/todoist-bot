@@ -1,0 +1,7 @@
+# Ignore environment variables file
+.env
+
+# Ignore Python cache
+__pycache__/
+.pytest_cache/
+*.pyc 
